@@ -1,0 +1,21 @@
+# Cache Files
+__pycache__
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Config Files
+.vscode/
+
+# Secrets
+env/
+.env
+*.env
+
+# Virtual Env
+venv/
+.venv/
+.Python
+
+# SQLAlchemy
+alembic.ini
