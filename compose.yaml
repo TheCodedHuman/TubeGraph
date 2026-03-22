@@ -1,0 +1,44 @@
+# =====================================================================
+# SERVICES: The actual containers we're going to run
+# =====================================================================
+services:
+    backend-api:
+        build: ./backend                            # Looks for Dockerfile in the backend folder
+        container_name: tubegraph_backend           # provides container name similar to -t flag so that it can be found easily by docker
+        ports:
+            - "${BACKEND_PORT}:${BACKEND_PORT}"     # Exposed port of backend-api container can communicate with
+        environment:
+            - DATABASE_URL=postgresql://${POSTGRES_CONTAINER}:${POSTGRES_PASSWORD}@db:${POSTGRES_PORT}/${POSTGRES_DB}         # This lets backend talk to database securely by deterministic path to it            
+        depends_on:
+            - db                                    # Container waits for the database to start early
+        networks:
+            - ${TUBEGRAPH_NETWORK}                  # Connect this container to our private network
+
+    db:
+        image: postgres:15-alpine                   # lightweight image of postgresql, by which will get downloaded and the container will be spawned
+        container_name: ${POSTGRES_DB}              # container name for the database so that it can be tagged and found easily
+        ports:
+            - "${POSTGRES_PORT}:${POSTGRES_PORT}"               # exposed port for database so that other services can communicate with it like a hole in the wall to peek
+        environment:
+            - POSTGRES_USER=${POSTGRES_CONTAINER}               # environment settings for the database
+            - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}            # check the environment DATABASE_URL  of backend-api
+            - POSTGRES_DB=${POSTGRES_DB}                        # these are the credentials it gets credentials from (but wait.. ain't we use .env file for it)
+        networks:
+            - ${TUBEGRAPH_NETWORK}                  # connects to the secure network which automatically resolves DNS (or maybe DNS isn't related to this rather with db)
+        volumes:
+            - db-data:${DB_VOLUME_PATH}             # Save the database files to the 'db-data' volume so we don't lose them
+
+
+# =====================================================================
+# NETWORKS: How the containers talk to each other safely
+# =====================================================================
+networks:
+    tubegraph-network:
+        driver: bridge                              # Creates an isolated local network for these containers
+
+
+# =====================================================================
+# VOLUMES: Where persistant data lives
+# =====================================================================
+volumes:
+    db-data:                                        # Declares the volume we referenced up in the database service.    
