@@ -22,9 +22,6 @@ venv/
 # Config Files
 .vscode/
 
-# SQLAlchemy
-alembic.ini
-
 # MisX
 dump.txt
 structure.txt
