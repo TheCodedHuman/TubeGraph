@@ -4,3 +4,5 @@ sqlalchemy
 alembic
 pydantic
 pydantic-settings
+psycopg2-binary
+google-generativeai
