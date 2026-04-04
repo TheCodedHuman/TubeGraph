@@ -18,4 +18,9 @@ venv/
 .Python
 
 # SQLAlchemy
-alembic.ini
+# alembic.ini
+# 👆 this file must neither be in .dockerignore nor in .gitignore
+# I removed the volume, container, and image, just for fun🤡
+# and when I ran docker compose up -d --build, this was nightmare
+# just because docker was ignoring this
+# docker compose exec backend-api alembic revision --autogenerate -m "init"

@@ -54,20 +54,6 @@ def run_migrations_offline() -> None:
     with context.begin_transaction():
         context.run_migrations()
 
-def get_safe_db_url(db_user: str, db_pass: str, db_port: str, db_name: str) -> str:
-    """
-    In DB-passwords its not recommended to put "@" symbol
-    this function works in 4 steps:
-    - @ → %40 (conversion done by urllib.parse.quote_plus functin)
-    - % → %% (%symbol is a way of taking inputs [like: %s, %d, %f])
-    - joining the components together to create a formatted url
-    - returning that safe formatted url
-    """
-    processed_pass = quote_plus(db_pass)
-    rectified_pass = processed_pass.replace('%', '%%')
-    formatted_db_url = f"postgresql://{db_user}:{rectified_pass}@localhost:{db_port}/{db_name}"
-    return formatted_db_url
-
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -89,7 +75,7 @@ load_dotenv(os.path.join(os.path.dirname(__file__), '../../.env'))
 # add your model's MetaData object here
 # for 'autogenerate' support
 # from myapp import mymodel
-from app.db.session import Base
+from app.db.session import Base, SAFE_DATABASE_URL
 from app.models.user import User
 from app.models.flowchart import Flowchart
 from app.models.userlibrary import UserLibrary
@@ -100,21 +86,22 @@ from app.models.userlibrary import UserLibrary
 target_metadata = Base.metadata
 
 
-# Components that will help construct the local database url for windows
+# Components that will help construct the database url for the container (earlier it was just for windows)
 db_user = os.getenv("POSTGRES_CONTAINER")
 db_pass = os.getenv("POSTGRES_PASSWORD")
 db_port = os.getenv("POSTGRES_PORT", "5432")
 db_name = os.getenv("POSTGRES_DB")
-
+db_server = os.getenv("POSTGRES_SERVER", "db")
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
 
-safe_db_url = get_safe_db_url(db_user, db_pass, db_port, db_name)
-config.set_main_option("sqlalchemy.url", safe_db_url)                                   
-
+# configparser has a quirk: it thinks '%' means a variable. 
+# So we escape our URL-encoded password (%40) to %%40 "just for Alembic"!
+alembic_db_url = SAFE_DATABASE_URL.replace('%', '%%')
+config.set_main_option("sqlalchemy.url", alembic_db_url)                                   
 
 
 if context.is_offline_mode():
