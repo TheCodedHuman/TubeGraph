@@ -1,8 +1,15 @@
-fastapi
-uvicorn[standard]
-sqlalchemy
-alembic
-pydantic
-pydantic-settings
-psycopg2-binary
-google-generativeai
+# Version Pinning is controversial, still I used it due to three reasons:
+# 1. codebase will work as expected everytime (even after a decade)
+# 2. indicates which version were used so maintainers will know from where this codebase was made
+# 3. rather than pinning older versions, I pinned the versions I am currently using in 2026. Yeah! this codebase is of 2026 :)
+
+fastapi==0.135.3
+uvicorn[standard]==0.43.0
+sqlalchemy==2.0.49
+alembic==1.18.4
+pydantic==2.12.5
+pydantic-settings==2.13.1
+psycopg2-binary==2.9.11
+google-generativeai==0.8.6
+bcrypt==5.0.0
+pydantic[email]

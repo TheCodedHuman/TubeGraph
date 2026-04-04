@@ -8,7 +8,10 @@ services:
         ports:
             - "${BACKEND_PORT}:${BACKEND_PORT}"     # Exposed port of backend-api container can communicate with
         environment:
-            - DATABASE_URL=postgresql://${POSTGRES_CONTAINER}:${POSTGRES_PASSWORD}@db:${POSTGRES_PORT}/${POSTGRES_DB}         # This lets backend talk to database securely by deterministic path to it            
+            - POSTGRES_CONTAINER=${POSTGRES_CONTAINER}    # Hand the individual variables to the Python container!
+            - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}  
+            - POSTGRES_PORT=${POSTGRES_PORT}  
+            - POSTGRES_DB=${POSTGRES_DB}  
         depends_on:
             - db                                    # Container waits for the database to start early
         networks:
