@@ -20,7 +20,10 @@ POSTGRES_SERVER = os.getenv("POSTGRES_SERVER", "db")
 # Usage of @ in password is forbidden in database urls, so we have to do  URL encoding of @ to %40
 raw_password = os.getenv("POSTGRES_PASSWORD", "")
 POSTGRES_PASSWORD = quote_plus(raw_password)
-SAFE_DATABASE_URL = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_SERVER}:{POSTGRES_PORT}/{POSTGRES_DB}"       
+
+# Cloud databases (like Neon) are highly secure and require an SSL connection (?sslmode=require) but local databases do not
+ssl_mode = "?sslmode=require" if POSTGRES_SERVER != "db" else ""
+SAFE_DATABASE_URL = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_SERVER}:{POSTGRES_PORT}/{POSTGRES_DB}{ssl_mode}"       
 
 # Create the 'connection' with the associated db
 engine = create_engine(SAFE_DATABASE_URL)        

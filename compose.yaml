@@ -12,7 +12,7 @@ services:
             - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}  
             - POSTGRES_PORT=${POSTGRES_PORT}  
             - POSTGRES_DB=${POSTGRES_DB}  
-            - POSTGRES_SERVER=db
+            - POSTGRES_SERVER=${POSTGRES_SERVER}    # This is the part we obtain as a big string when using platforms like neondb or cloud-storage. Often referred to as "HOST"
         depends_on:
             - db                                    # Container waits for the database to start early
         networks:
