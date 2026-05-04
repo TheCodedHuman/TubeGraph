@@ -6,6 +6,9 @@
 
 # Imports
 import bcrypt
+import os       # using os module to get .env secret values
+import jwt      # requires PyJWT module
+from datetime import datetime, timedelta, timezone
 
 # We use bcrypt, the industry standard hashing algorithm
 # this returns an object consisting of several methods 
@@ -14,8 +17,13 @@ import bcrypt
 # # bcrypt pours "salt" in the "raw" password :)
 
 
-# Defined
+# Literals
+SECRET_KEY = os.getenv("SECRET_KEY", "TheCodedHuman")
+ALGORITHM = os.getenv("ALGORITHM", "HS256")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE", default=10))             # os.getenv() returns string
 
+
+# Defined
 def get_password_hash(password: str) -> str:
     """Scrambles a raw password into a secure hash"""
     
@@ -33,3 +41,16 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     hashed_password_in_bytes = hashed_password.encode('utf-8')
 
     return bcrypt.checkpw(password_in_bytes, hashed_password_in_bytes)
+
+def create_access_token(data: dict) -> str:
+    """Forges the VIP wristband (JWT) for the user"""
+
+    expire_time = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+
+    to_encode = data.copy()                                     # dicts are reference objects, NOT-cloning manipulates the actual data
+    to_encode.update({"exp": expire_time})
+
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, ALGORITHM)  # actual jwt token generator, to_encode is the payload (around which token gets wrapped up)
+
+    return encoded_jwt
+

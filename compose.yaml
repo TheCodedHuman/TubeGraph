@@ -13,6 +13,9 @@ services:
             - POSTGRES_PORT=${POSTGRES_PORT}  
             - POSTGRES_DB=${POSTGRES_DB}  
             - POSTGRES_SERVER=${POSTGRES_SERVER}    # This is the part we obtain as a big string when using platforms like neondb or cloud-storage. Often referred to as "HOST"
+            - SECRET_KEY=${SECRET_KEY}              # JWT Secrets Injection
+            - ALGORITHM=${ALGORITHM}
+            - ACCESS_TOKEN_EXPIRE=${ACCESS_TOKEN_EXPIRE}
         depends_on:
             - db                                    # Container waits for the database to start early
         networks:

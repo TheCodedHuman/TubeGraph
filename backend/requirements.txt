@@ -13,3 +13,5 @@ psycopg2-binary==2.9.11
 google-generativeai==0.8.6
 bcrypt==5.0.0
 pydantic[email]
+PyJWT==2.12.1
+python-multipart==0.0.27

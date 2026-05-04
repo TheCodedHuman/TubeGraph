@@ -3,12 +3,13 @@
 
 # Imports
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from app.db.session import SessionLocal
 from app.models.user import User
-from app.schemas.user import UserCreate, UserResponse
-from app.core.security import get_password_hash
+from app.schemas.user import UserCreate, UserResponse, Token
+from app.core.security import get_password_hash, verify_password, create_access_token
 
 
 # Mini-Router for "this" specific file
@@ -53,4 +54,39 @@ def create_user(user_in: UserCreate, db: Session = Depends(get_db)):
 
     # 5. Return it to the frontend. Pydantic will automatically strip the password out (response_model parameter did this magic here)
     return db_user
+
+
+@router.post("/login", response_model=Token)
+def login_for_access_token(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db)):
+    """The Bouncer at the door verifying credentials and handing out wristbands"""
+
+    # Look up the user by Email
+    # (OAuth2 forms always use the field name 'username', but we will ask users to type their email into it)
+    user = db.query(User).filter(User.email == form_data.username).first()
+
+    # 2. Check if user exists AND if the password matches the hash
+    if not user or not verify_password(form_data.password, user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+    
+    # 3. Forge the wristband! We embed the user's email inside the token so we know who they are later
+    # # "sub" stands for Subject. It is an official industry standard for JWTs
+    access_token = create_access_token(data={"sub": user.email})                
+    
+    # 4. Return the wristband to the user, and not the bouncer itself ;)
+    return {
+        "access_token": access_token,
+        "token_type": "bearer"
+    }
+
+
+
+
+
+
 

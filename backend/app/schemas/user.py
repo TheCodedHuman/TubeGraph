@@ -1,8 +1,15 @@
-# Schemas are such files/components of backend architecture, which validates the incoming and outgoing data like a bouncer
+# Schemas are such files/components of backend architecture, which "validates" the incoming and outgoing data like a bouncer
+# remember!, Pydantic itself doesn’t send anything, it just validates and "serializes" data according to the schema
+# also, JSONifying is one type of serialization (text-based, human-readable, cross-language). Serialization (and De-Serialization) are far more versatile than just conveting it to mere JSON
 
 # Imports
 from pydantic import BaseModel, EmailStr, ConfigDict
 from datetime import datetime
+            
+# Auth Token, this will get sent to frontend in request as well as response ()
+class Token(BaseModel):
+    access_token: str                   # payload wrapped in jwt token 
+    token_type: str
 
 # BaseModel creates an "in-memory data-structure" which we can use by inheriting in python classes
 class UserBase(BaseModel):              # shared property for both incoming request and outgoing response
@@ -20,4 +27,3 @@ class UserResponse(UserBase):
     
     # this tells pydantic to read data from a sqlalchemy ORM model
     model_config = ConfigDict(from_attributes=True)
-    
