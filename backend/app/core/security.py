@@ -1,27 +1,19 @@
-# When dealing with user's passwords, we cannot store plaintext passwords in database
-# so, we need certain functions that hash (no way of return to plaintext) those passwords
-# and, later when user tries to login (or do something) with their plaintext password, then it matches the hashed password
-# (hashed data cannot be reversed to previous form, making it incredibly secure, as the code that hashed it, is capable to validate it (dunno how))
-# its a core utility on which the architecture (security part) depends on, so we should store it in core/ folder
-
 # Imports
 import bcrypt
-import os       # using os module to get .env secret values
-import jwt      # requires PyJWT module
+import os
+import jwt
 from datetime import datetime, timedelta, timezone
-
-# We use bcrypt, the industry standard hashing algorithm
-# this returns an object consisting of several methods 
-# (which means, when created an object out of it, it carries all the tools to deal with the data in its lifecycle)
-# (maybe that's why it have naming pws_context => password-context, carrying all capabilites for the password within object)
-# # bcrypt pours "salt" in the "raw" password :)
-
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+from sqlalchemy.orm import Session
+from app.db.session import SessionLocal, get_db_session
+from app.models.user import User
 
 # Literals
 SECRET_KEY = os.getenv("SECRET_KEY", "TheCodedHuman")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE", default=10))             # os.getenv() returns string
-
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 # Defined
 def get_password_hash(password: str) -> str:
@@ -54,3 +46,29 @@ def create_access_token(data: dict) -> str:
 
     return encoded_jwt
 
+
+def get_current_user(
+        token: str = Depends(oauth2_scheme),
+        db: Session = Depends(get_db_session)):
+    """Decodes the JWT and finds the user in the database"""
+
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])         # 1. Decode the wristband using our secret key
+        email: str = payload.get("sub")                                         # 2. Extract the email ("sub") we put in there during login
+        if email is None:
+            raise credentials_exception
+            
+    except jwt.PyJWTError:              # Catches expired or tampered tokens
+        raise credentials_exception
+        
+    user = db.query(User).filter(User.email == email).first()                   # 3. Look up the user in the database to make sure they haven't been deleted
+    if user is None:
+        raise credentials_exception
+        
+    return user                                                                 # 4. Hand the verified user object to the route

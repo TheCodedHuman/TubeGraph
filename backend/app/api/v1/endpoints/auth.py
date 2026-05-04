@@ -5,8 +5,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-
-from app.db.session import SessionLocal
+from app.db.session import SessionLocal, get_db_session
 from app.models.user import User
 from app.schemas.user import UserCreate, UserResponse, Token
 from app.core.security import get_password_hash, verify_password, create_access_token
@@ -16,18 +15,10 @@ from app.core.security import get_password_hash, verify_password, create_access_
 router = APIRouter()
 
 
-# Defined
-def get_db():
-    """This opens a database connection for the request, and safely closes it after"""
-    db = SessionLocal()
-    try: yield db
-    finally: db.close()
-
-
 # Routes
 # The POST endpoint, returns the safe "UserResponse" schema
 @router.post("/signup", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-def create_user(user_in: UserCreate, db: Session = Depends(get_db)):
+def create_user(user_in: UserCreate, db: Session = Depends(get_db_session)):
     
     # 1. Check if the email already exists (or taken)
     user = db.query(User).filter(User.email == user_in.email).first()
@@ -59,34 +50,23 @@ def create_user(user_in: UserCreate, db: Session = Depends(get_db)):
 @router.post("/login", response_model=Token)
 def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(),
-    db: Session = Depends(get_db)):
+    db: Session = Depends(get_db_session)):
     """The Bouncer at the door verifying credentials and handing out wristbands"""
 
-    # Look up the user by Email
     # (OAuth2 forms always use the field name 'username', but we will ask users to type their email into it)
-    user = db.query(User).filter(User.email == form_data.username).first()
+    user = db.query(User).filter(User.email == form_data.username).first()          # 1. Look up the user by Email
 
-    # 2. Check if user exists AND if the password matches the hash
-    if not user or not verify_password(form_data.password, user.password_hash):
+    if not user or not verify_password(form_data.password, user.password_hash):     # 2. Check if user exists AND if the password matches the hash
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"}
         )
     
-    # 3. Forge the wristband! We embed the user's email inside the token so we know who they are later
-    # # "sub" stands for Subject. It is an official industry standard for JWTs
-    access_token = create_access_token(data={"sub": user.email})                
+    # "sub" stands for Subject. It is an official industry standard for JWTs
+    access_token = create_access_token(data={"sub": user.email})                    # 3. Forge the wristband! We embed the user's email inside the token so we know who they are later      
     
-    # 4. Return the wristband to the user, and not the bouncer itself ;)
-    return {
+    return {                                                                        # 4. Return the wristband to the user, and not the bouncer itself ;)
         "access_token": access_token,
         "token_type": "bearer"
     }
-
-
-
-
-
-
-

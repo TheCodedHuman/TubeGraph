@@ -26,7 +26,10 @@ ssl_mode = "?sslmode=require" if POSTGRES_SERVER != "db" else ""
 SAFE_DATABASE_URL = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_SERVER}:{POSTGRES_PORT}/{POSTGRES_DB}{ssl_mode}"       
 
 # Create the 'connection' with the associated db
-engine = create_engine(SAFE_DATABASE_URL)        
+engine = create_engine(
+    SAFE_DATABASE_URL,
+    pool_pre_ping=True
+)
 
 # Create session 'factory' (session will vanish after each communication)
 SessionLocal = sessionmaker(autocommit=False, 
@@ -35,3 +38,11 @@ SessionLocal = sessionmaker(autocommit=False,
 
 # Create the Base Class (The blueprint all our future models will inherit from)
 Base = declarative_base()       # its a function that creates and returns a class
+
+
+# Defined
+def get_db_session():
+    """This opens a database connection for the request, and safely closes it after"""
+    db = SessionLocal()
+    try: yield db
+    finally: db.close()

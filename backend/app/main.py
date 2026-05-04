@@ -3,9 +3,19 @@
 # Imports
 from fastapi import FastAPI
 from app.api.v1.api import api_router
+from fastapi.middleware.cors import CORSMiddleware
 
 # Literals
 app = FastAPI(title="TubeGraph API", version="1.0.0")
+
+# Middleware And Security Setup
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],        # TODO: Allows ALL websites, Change to your Vercel or Custom URL later
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # plugs the entire v1 api mechanism into the application
 app.include_router(api_router, prefix="/api/v1")
