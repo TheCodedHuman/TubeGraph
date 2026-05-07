@@ -31,9 +31,10 @@ def generate_graph_data(text: str) -> dict | None:
     """Sends transcript text to Gemini and returns a structured JSON dictionary"""
     
     prompt = f"""
-    You are a Knowledge Graph generator. 
+    You are a Knowledge Graph and Summary generator. 
     Analyze the following video transcript.
-    Identify key concepts (nodes) and their relationships (edges).
+    1. Identify key concepts (nodes) and their relationships (edges).
+    2. Write a comprehensive, well-structured Markdown summary of the video.
     
     Output strictly VALID JSON with this structure:
     {{
@@ -43,7 +44,8 @@ def generate_graph_data(text: str) -> dict | None:
       ],
       "edges": [
         {{"source": "1", "target": "2", "label": "relates to"}}
-      ]
+      ],
+      "summary": "## Video Summary\\n\\nThis video explains..."
     }}
     
     TRANSCRIPT:
