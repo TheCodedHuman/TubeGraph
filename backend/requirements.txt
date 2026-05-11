@@ -15,4 +15,4 @@ bcrypt==5.0.0
 pydantic[email]
 PyJWT==2.12.1
 python-multipart==0.0.27
-youtube-transcript-api==1.2.4
+youtube-transcript-api              # youtube keeps updating structure, so unpinning keeps functionality intact
