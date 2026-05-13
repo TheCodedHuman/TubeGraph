@@ -9,7 +9,8 @@ from app.db.session import SessionLocal, get_db_session
 from app.models.user import User
 from app.schemas.user import UserCreate, UserResponse, Token
 from app.core.security import get_password_hash, verify_password, create_access_token
-
+from app.utils.db_helpers import push_to_db
+from sqlalchemy.exc import IntegrityError
 
 # Mini-Router for "this" specific file
 router = APIRouter()
@@ -20,14 +21,19 @@ router = APIRouter()
 @router.post("/signup", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def create_user(user_in: UserCreate, db: Session = Depends(get_db_session)):
     
-    # 1. Check if the email already exists (or taken)
-    user = db.query(User).filter(User.email == user_in.email).first()
-    if user:
+    # 1. Check if the email OR username already exists (or taken)
+    if db.query(User).filter(User.email == user_in.email).first():
         raise HTTPException(
             status_code=400,
             detail="The user with this email already exists in the system."
         )
-    
+
+    if db.query(User).filter(User.username == user_in.username).first():
+        raise HTTPException(
+            status_code=400,
+            detail="The user with this username already exists in the system."
+        )
+
     # 2. Scramble the raw password using the our core security function
     hashed_pw = get_password_hash(user_in.password)
 
@@ -38,10 +44,15 @@ def create_user(user_in: UserCreate, db: Session = Depends(get_db_session)):
         password_hash=hashed_pw
     )
 
-    # 4. Save it to the PostgreSQL hard drive
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
+    # 4. Save it to the PostgreSQL hard drive (with safety check)
+    try:
+        push_to_db(db_user, db)
+    except IntegrityError:                  # between the IF check and INSERT, if two users hit the exact same username in the 1 millisecond gap this cathces the database crash
+        db.rollback()                       # this process is mandatory to resolve conflicted db session, so that next query in same session executes without any error
+        raise HTTPException(
+            status_code=409,
+            detail="Database conflict: Could not create user. Please try again."
+        )
 
     # 5. Return it to the frontend. Pydantic will automatically strip the password out (response_model parameter did this magic here)
     return db_user
