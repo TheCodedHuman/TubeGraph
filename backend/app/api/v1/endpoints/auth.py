@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.db.session import SessionLocal, get_db_session
 from app.models.user import User
 from app.schemas.user import UserCreate, UserResponse, Token
-from app.core.security import get_password_hash, verify_password, create_access_token
+from app.core.security import get_password_hash, verify_password, create_access_token, get_current_user
 from app.utils.db_helpers import push_to_db
 from sqlalchemy.exc import IntegrityError
 
@@ -75,9 +75,23 @@ def login_for_access_token(
         )
     
     # "sub" stands for Subject. It is an official industry standard for JWTs
-    access_token = create_access_token(data={"sub": user.email})                    # 3. Forge the wristband! We embed the user's email inside the token so we know who they are later      
+    access_token = create_access_token(data={
+        "sub": user.email,
+        "username": user.username
+    })                    # 3. Forge the wristband! We embed the user's email inside the token so we know who they are later      
     
     return {                                                                        # 4. Return the wristband to the user, and not the bouncer itself ;)
         "access_token": access_token,
-        "token_type": "bearer"
+        "token_type": "bearer",
     }
+
+
+@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
+def delete_user(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db_session)):
+    """Allows a user to permanently delete their account and associated data."""
+
+    db.delete(current_user)
+    db.commit()
+    return None
